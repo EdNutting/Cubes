@@ -7,6 +7,8 @@ public class World : MonoBehaviour
     GameObject[] Chunks;
     public GameObject BaseChunk;
 
+    public IBlock[,,] Blocks;
+
     void Start()
     {
         GenerateWorld();
@@ -14,10 +16,33 @@ public class World : MonoBehaviour
 
     void GenerateWorld()
     {
-        int chunkCount = 2;
+        GenerateBlockData();
+        GenerateChunks();
+    }
 
-        Chunks = new GameObject[chunkCount];
-        for (int i = 0; i < chunkCount; i++)
+    void GenerateBlockData()
+    {
+        Blocks = new IBlock[ Config.ChunkCount * Config.ChunkWidth
+                           , Config.ChunkCount * Config.ChunkHeight
+                           , Config.ChunkCount * Config.ChunkDepth
+                           ];
+
+        for (int x = 0; x < Config.ChunkCount * Config.ChunkWidth; x++)
+        {
+            for (int y = 0; y < Config.ChunkCount * Config.ChunkHeight; y++)
+            {
+                for (int z = 0; z < Config.ChunkCount * Config.ChunkDepth; z++)
+                {
+                    Blocks[x, y, z] = new Block();
+                }
+            }
+        }
+    }
+
+    void GenerateChunks()
+    {
+        Chunks = new GameObject[Config.ChunkCount];
+        for (int i = 0; i < Config.ChunkCount; i++)
         {
             int x = i;
             int y = 0;
