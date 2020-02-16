@@ -4,8 +4,8 @@ using UnityEngine;
 
 public interface IBlock
 {
-    public Vector3Int pos { get; }
-    public bool isSolid { get;  }
+    Vector3Int pos { get; }
+    bool isSolid { get;  }
 }
 
 public class Block : IBlock
