@@ -33,7 +33,7 @@ public class World : MonoBehaviour
             {
                 for (int z = 0; z < Config.ChunkCount * Config.ChunkDepth; z++)
                 {
-                    Blocks[x, y, z] = new Block() { isSolid = true };
+                    Blocks[x, y, z] = new Block() { isSolid = true, isVisible = x % 2 == 0 };
                 }
             }
         }

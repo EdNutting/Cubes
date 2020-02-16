@@ -15,6 +15,17 @@ public class Chunk : MonoBehaviour
         public bool solidForward;
         public bool solidBackward;
     }
+    sealed class NeighbourVisibleStates
+    {
+        public bool visibleAbove;
+        public bool visibleBelow;
+
+        public bool visibleLeft;
+        public bool visibleRight;
+
+        public bool visibleForward;
+        public bool visibleBackward;
+    }
 
     Vector3[] vertices;
     int[] triangles;
@@ -55,7 +66,10 @@ public class Chunk : MonoBehaviour
             {
                 for (int z = 0; z < Config.ChunkDepth; z++)
                 {
-                    triangleIndex += GenerateBlockMesh(x, y, z, triangleIndex);
+                    if (Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z))))
+                    {
+                        triangleIndex += GenerateBlockMesh(x, y, z, triangleIndex);
+                    }
                 }
             }
         }
@@ -65,16 +79,23 @@ public class Chunk : MonoBehaviour
     {
         int startTriangleIndex = triangleIndex;
 
-        NeighbourSolidStates states = GetNeighbourSolidStates(x, y, z);
+        NeighbourSolidStates solidStates = GetNeighbourSolidStates(x, y, z);
+        NeighbourVisibleStates visibleStates = GetNeighbourVisibleStates(x, y, z);
 
-        triangleIndex += states.solidBelow ? 0 : GenerateFaceMesh(x, y, z, new Vector3Int(1, 0, 0), new Vector3Int(0, 0, 1), 3 * triangleIndex);
-        triangleIndex += states.solidAbove ? 0 : GenerateFaceMesh(x, y + 1, z, new Vector3Int(0, 0, 1), new Vector3Int(1, 0, 0), 3 * triangleIndex);
+        triangleIndex += solidStates.solidBelow && visibleStates.visibleBelow ? 0 
+            : GenerateFaceMesh(x, y, z, new Vector3Int(1, 0, 0), new Vector3Int(0, 0, 1), 3 * triangleIndex);
+        triangleIndex += solidStates.solidAbove && visibleStates.visibleAbove ? 0 
+            : GenerateFaceMesh(x, y + 1, z, new Vector3Int(0, 0, 1), new Vector3Int(1, 0, 0), 3 * triangleIndex);
 
-        triangleIndex += states.solidBackward ? 0 : GenerateFaceMesh(x, y, z, new Vector3Int(0, 1, 0), new Vector3Int(1, 0, 0), 3 * triangleIndex);
-        triangleIndex += states.solidForward ? 0 : GenerateFaceMesh(x, y, z + 1, new Vector3Int(1, 0, 0), new Vector3Int(0, 1, 0), 3 * triangleIndex);
+        triangleIndex += solidStates.solidBackward && visibleStates.visibleBackward ? 0 
+            : GenerateFaceMesh(x, y, z, new Vector3Int(0, 1, 0), new Vector3Int(1, 0, 0), 3 * triangleIndex);
+        triangleIndex += solidStates.solidForward && visibleStates.visibleForward ? 0 
+            : GenerateFaceMesh(x, y, z + 1, new Vector3Int(1, 0, 0), new Vector3Int(0, 1, 0), 3 * triangleIndex);
 
-        triangleIndex += states.solidLeft ? 0 : GenerateFaceMesh(x, y, z, new Vector3Int(0, 0, 1), new Vector3Int(0, 1, 0), 3 * triangleIndex);
-        triangleIndex += states.solidRight ? 0 : GenerateFaceMesh(x + 1, y, z, new Vector3Int(0, 1, 0), new Vector3Int(0, 0, 1), 3 * triangleIndex);
+        triangleIndex += solidStates.solidLeft && visibleStates.visibleLeft ? 0 
+            : GenerateFaceMesh(x, y, z, new Vector3Int(0, 0, 1), new Vector3Int(0, 1, 0), 3 * triangleIndex);
+        triangleIndex += solidStates.solidRight && visibleStates.visibleRight ? 0 
+            : GenerateFaceMesh(x + 1, y, z, new Vector3Int(0, 1, 0), new Vector3Int(0, 0, 1), 3 * triangleIndex);
 
         return triangleIndex - startTriangleIndex;
     }
@@ -133,13 +154,24 @@ public class Chunk : MonoBehaviour
     NeighbourSolidStates GetNeighbourSolidStates(int x, int y, int z)
     {
         return new NeighbourSolidStates
-        {
-          solidAbove = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y + 1, z)))
+        { solidAbove = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y + 1, z)))
         , solidBelow = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y - 1, z)))
         , solidLeft = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x - 1, y, z)))
         , solidRight = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x + 1, y, z)))
         , solidForward = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z + 1)))
         , solidBackward = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z - 1)))
+        };
+    }
+
+    NeighbourVisibleStates GetNeighbourVisibleStates(int x, int y, int z)
+    {
+        return new NeighbourVisibleStates
+        { visibleAbove = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y + 1, z)))
+        , visibleBelow = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y - 1, z)))
+        , visibleLeft = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x - 1, y, z)))
+        , visibleRight = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x + 1, y, z)))
+        , visibleForward = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z + 1)))
+        , visibleBackward = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z - 1)))
         };
     }
 
@@ -153,14 +185,18 @@ public class Chunk : MonoBehaviour
             {
                 for (int z = 0; z < Config.ChunkDepth; z++)
                 {
-                    NeighbourSolidStates states = GetNeighbourSolidStates(x, y, z);
+                    if (Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z))))
+                    {
+                        NeighbourSolidStates solidStates = GetNeighbourSolidStates(x, y, z);
+                        NeighbourVisibleStates visibleStates = GetNeighbourVisibleStates(x, y, z);
 
-                    visibleFaces += states.solidAbove ? 0 : 1;
-                    visibleFaces += states.solidBelow ? 0 : 1;
-                    visibleFaces += states.solidLeft ? 0 : 1;
-                    visibleFaces += states.solidRight ? 0 : 1;
-                    visibleFaces += states.solidForward ? 0 : 1;
-                    visibleFaces += states.solidBackward ? 0 : 1;
+                        visibleFaces += solidStates.solidAbove && visibleStates.visibleAbove ? 0 : 1;
+                        visibleFaces += solidStates.solidBelow && visibleStates.visibleBelow ? 0 : 1;
+                        visibleFaces += solidStates.solidLeft && visibleStates.visibleLeft ? 0 : 1;
+                        visibleFaces += solidStates.solidRight && visibleStates.visibleRight ? 0 : 1;
+                        visibleFaces += solidStates.solidForward && visibleStates.visibleForward ? 0 : 1;
+                        visibleFaces += solidStates.solidBackward && visibleStates.visibleBackward ? 0 : 1;
+                    }
                 }
             }
         }
