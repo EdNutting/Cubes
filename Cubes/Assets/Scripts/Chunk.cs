@@ -85,26 +85,28 @@ public class Chunk : MonoBehaviour
         BlockUVMap uvMap = Block.GetBlockUVMap(Block.GetBlockType(world.Blocks, new Vector3Int(x, y, z)));
 
         if (!solidStates.solidBelow || !visibleStates.visibleBelow)
-            GenerateFaceMesh(x, y, z, new Vector3Int(1, 0, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.bottom);
+            GenerateFaceMesh(x, y, z, new Vector3Int(1, 0, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.bottom, false);
 
         if (!solidStates.solidAbove || !visibleStates.visibleAbove)
-            GenerateFaceMesh(x, y + 1, z, new Vector3Int(0, 0, 1), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.top);
+            GenerateFaceMesh(x, y + 1, z, new Vector3Int(0, 0, 1), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.top, false);
 
         if (!solidStates.solidBackward || !visibleStates.visibleBackward)
-            GenerateFaceMesh(x, y, z, new Vector3Int(0, 1, 0), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.back);
+            GenerateFaceMesh(x, y, z, new Vector3Int(0, 1, 0), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.back, false);
 
         if (!solidStates.solidForward || !visibleStates.visibleForward)
-            GenerateFaceMesh(x, y, z + 1, new Vector3Int(1, 0, 0), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.front);
+            GenerateFaceMesh(x, y, z + 1, new Vector3Int(1, 0, 0), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.front, true);
 
         if (!solidStates.solidLeft || !visibleStates.visibleLeft)
-            GenerateFaceMesh(x, y, z, new Vector3Int(0, 0, 1), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.left);
+            GenerateFaceMesh(x, y, z, new Vector3Int(0, 0, 1), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.left, true);
 
         if (!solidStates.solidRight || !visibleStates.visibleRight)
-            GenerateFaceMesh(x + 1, y, z, new Vector3Int(0, 1, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.right);
+            GenerateFaceMesh(x + 1, y, z, new Vector3Int(0, 1, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.right, false);
     }
 
-    void GenerateFaceMesh(int x, int y, int z, Vector3Int planeAxis1, Vector3Int planeAxis2, ref int triangleIndex, ref int vertexIndex, Vector2[] uvMap)
+    void GenerateFaceMesh(int x, int y, int z, Vector3Int planeAxis1, Vector3Int planeAxis2, ref int triangleIndex, ref int vertexIndex, Vector2[] uvMap, bool rotateOrder)
     {
+        // rotateOrder is used to fix texture UV mapping so that they're not rotated
+
         Vector3Int corner = new Vector3Int(x, y, z);
 
         Vector3Int v0 = corner;
@@ -129,10 +131,20 @@ public class Chunk : MonoBehaviour
         triangles[triangleIndex++] = vertexIndex + 3;
         triangles[triangleIndex++] = vertexIndex + 2;
 
-        uv[vertexIndex + 0] = uvMap[0];
-        uv[vertexIndex + 1] = uvMap[1];
-        uv[vertexIndex + 2] = uvMap[2];
-        uv[vertexIndex + 3] = uvMap[3];
+        if (rotateOrder)
+        {
+            uv[vertexIndex + 0] = uvMap[0];
+            uv[vertexIndex + 1] = uvMap[2];
+            uv[vertexIndex + 2] = uvMap[1];
+            uv[vertexIndex + 3] = uvMap[3];
+        }
+        else
+        {
+            uv[vertexIndex + 0] = uvMap[0];
+            uv[vertexIndex + 1] = uvMap[1];
+            uv[vertexIndex + 2] = uvMap[2];
+            uv[vertexIndex + 3] = uvMap[3];
+        }
 
         vertexIndex += 4;
     }
