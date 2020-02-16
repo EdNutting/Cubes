@@ -2,62 +2,80 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// A chunk is a single mesh of many blocks used to improve render efficiency.
+/// </summary>
 public class Chunk : MonoBehaviour
 {
-    sealed class NeighbourSolidStates
+    /// <summary>
+    /// The visible or solid states of the blocks surrounding the current block.
+    /// </summary>
+    sealed class NeighbourStates
     {
-        public bool solidAbove;
-        public bool solidBelow;
+        public bool Above;
+        public bool Below;
 
-        public bool solidLeft;
-        public bool solidRight;
+        public bool Left;
+        public bool Right;
 
-        public bool solidForward;
-        public bool solidBackward;
-    }
-    sealed class NeighbourVisibleStates
-    {
-        public bool visibleAbove;
-        public bool visibleBelow;
-
-        public bool visibleLeft;
-        public bool visibleRight;
-
-        public bool visibleForward;
-        public bool visibleBackward;
+        public bool Forward;
+        public bool Backward;
     }
 
-    Vector3[] vertices;
-    int[] triangles;
-    Vector2[] uv;
+    /* Construct the mesh data, then assign it to a new mesh. */
+    Vector3[] _vertices;
+    int[] _triangles;
+    Vector2[] _uv;
+    Mesh _mesh;
 
-    Mesh mesh;
-    public MeshFilter meshFilter;
+    World _world;
 
-    public World world;
+    /// <summary>
+    /// Position of this chunk in global block coordinates.
+    /// </summary>
+    Vector3Int _position;
 
-    public Vector3Int position;
+    public MeshFilter MeshFilter;
+
+    /// <summary>
+    /// Initialise the chunk.
+    /// </summary>
+    /// <param name="world">The world.</param>
+    /// <param name="position">The position of this chunk in global block coordinates.</param>
+    public void Init(World world, Vector3Int position)
+    {
+        _world = world;
+        _position = position;
+
+        gameObject.name = string.Format("Chunk {0}, {1}, {2}", position.x, position.y, position.z);
+    }
 
     void Start()
     {
-        GenerateBlocksMesh();
+        GenerateBlocks();
 
-        mesh = new Mesh
+        _mesh = new Mesh
         {
-            vertices = vertices,
-            triangles = triangles,
-            uv = uv
+            vertices = _vertices,
+            triangles = _triangles,
+            uv = _uv
         };
-        meshFilter.mesh = mesh;
+        MeshFilter.mesh = _mesh;
     }
 
-    void GenerateBlocksMesh()
+    /// <summary>
+    /// Generates vertices, triangles and uv map for the blocks in this chunk.
+    /// </summary>
+    void GenerateBlocks()
     {
+        // Pre-compute the number of faces that will be visible
+        //  Enables us to create the vertices, triangles and uv arrays
+        //  with exactly the right size, rather than using `List`s
         int visibleFaceCount = CountVisibleFaces();
 
-        vertices = new Vector3[visibleFaceCount * 4];
-        triangles = new int[visibleFaceCount * 2 * 3]; // faces * triangles per face * vertices per triangle
-        uv = new Vector2[vertices.Length];
+        _vertices = new Vector3[visibleFaceCount * 4];
+        _triangles = new int[visibleFaceCount * 2 * 3]; // faces * triangles per face * vertices per triangle
+        _uv = new Vector2[_vertices.Length];
 
         int triangleIndex = 0;
         int vertexIndex = 0;
@@ -68,108 +86,133 @@ public class Chunk : MonoBehaviour
             {
                 for (int z = 0; z < Config.Instance.ChunkDepth; z++)
                 {
-                    if (Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z))))
+                    if (Block.IsBlockVisible(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y, z))))
                     {
-                        GenerateBlockMesh(x, y, z, ref triangleIndex, ref vertexIndex);
+                        GenerateBlock(x, y, z, ref triangleIndex, ref vertexIndex);
                     }
                 }
             }
         }
     }
 
-    void GenerateBlockMesh(int x, int y, int z, ref int triangleIndex, ref int vertexIndex)
+    /// <summary>
+    /// Generate the vertices, triangles and uv map for a given block.
+    /// 
+    /// Must be called in-sequence as per GenerateBlocks.
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    /// <param name="triangleIndex"></param>
+    /// <param name="vertexIndex"></param>
+    void GenerateBlock(int x, int y, int z, ref int triangleIndex, ref int vertexIndex)
     {
-        NeighbourSolidStates solidStates = GetNeighbourSolidStates(x, y, z);
-        NeighbourVisibleStates visibleStates = GetNeighbourVisibleStates(x, y, z);
+        NeighbourStates solidStates = GetNeighbourSolidStates(x, y, z);
+        NeighbourStates visibleStates = GetNeighbourStates(x, y, z);
 
-        BlockUVMap uvMap = Block.GetBlockUVMap(Block.GetBlockType(world.Blocks, new Vector3Int(x, y, z)));
+        BlockUVMap uvMap = Block.GetBlockUVMap(Block.GetBlockType(_world.Blocks, new Vector3Int(x, y, z)));
 
-        if (!solidStates.solidBelow || !visibleStates.visibleBelow)
-            GenerateFaceMesh(x, y, z, new Vector3Int(1, 0, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.bottom, false);
+        if (!solidStates.Below || !visibleStates.Below)
+            GenerateFace(x, y, z, new Vector3Int(1, 0, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.bottom, false);
 
-        if (!solidStates.solidAbove || !visibleStates.visibleAbove)
-            GenerateFaceMesh(x, y + 1, z, new Vector3Int(0, 0, 1), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.top, false);
+        if (!solidStates.Above || !visibleStates.Above)
+            GenerateFace(x, y + 1, z, new Vector3Int(0, 0, 1), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.top, false);
 
-        if (!solidStates.solidBackward || !visibleStates.visibleBackward)
-            GenerateFaceMesh(x, y, z, new Vector3Int(0, 1, 0), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.back, false);
+        if (!solidStates.Backward || !visibleStates.Backward)
+            GenerateFace(x, y, z, new Vector3Int(0, 1, 0), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.back, false);
 
-        if (!solidStates.solidForward || !visibleStates.visibleForward)
-            GenerateFaceMesh(x, y, z + 1, new Vector3Int(1, 0, 0), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.front, true);
+        if (!solidStates.Forward || !visibleStates.Forward)
+            GenerateFace(x, y, z + 1, new Vector3Int(1, 0, 0), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.front, true);
 
-        if (!solidStates.solidLeft || !visibleStates.visibleLeft)
-            GenerateFaceMesh(x, y, z, new Vector3Int(0, 0, 1), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.left, true);
+        if (!solidStates.Left || !visibleStates.Left)
+            GenerateFace(x, y, z, new Vector3Int(0, 0, 1), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.left, true);
 
-        if (!solidStates.solidRight || !visibleStates.visibleRight)
-            GenerateFaceMesh(x + 1, y, z, new Vector3Int(0, 1, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.right, false);
+        if (!solidStates.Right || !visibleStates.Right)
+            GenerateFace(x + 1, y, z, new Vector3Int(0, 1, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.right, false);
     }
 
-    void GenerateFaceMesh(int x, int y, int z, Vector3Int planeAxis1, Vector3Int planeAxis2, ref int triangleIndex, ref int vertexIndex, Vector2[] uvMap, bool rotateOrder)
+    /// <summary>
+    /// Generate a single face of a block.
+    /// 
+    /// Must be called in sequence as per GenerateBlock.
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    /// <param name="planeAxis1">A unit-vector for one of the axes of the plane of the face.</param>
+    /// <param name="planeAxis2">The other unit-vector of the plane.</param>
+    /// <param name="triangleIndex"></param>
+    /// <param name="vertexIndex"></param>
+    /// <param name="uvMap">The UV map coordinates for this face.</param>
+    /// <param name="rotateOrder">Uses the alternate rotation of the texture for this face.</param>
+    void GenerateFace(int x, int y, int z, Vector3Int planeAxis1, Vector3Int planeAxis2, ref int triangleIndex, ref int vertexIndex, Vector2[] uvMap, bool rotateOrder)
     {
-        // rotateOrder is used to fix texture UV mapping so that they're not rotated
-
         Vector3Int corner = new Vector3Int(x, y, z);
 
-        Vector3Int v0 = corner;
-        Vector3Int v1 = corner + planeAxis1;
-        Vector3Int v2 = corner + planeAxis2;
-        Vector3Int v3 = corner + planeAxis1 + planeAxis2;
+        /* Vertices of a face in the following layout:
 
-        // 1 -- 3
-        // |    |
-        // 0 -- 2
+           1 -- 3
+           |    |
+           0 -- 2
+        */
 
-        vertices[vertexIndex + 0] = new Vector3(v0.x, v0.y, v0.z);
-        vertices[vertexIndex + 1] = new Vector3(v1.x, v1.y, v1.z);
-        vertices[vertexIndex + 2] = new Vector3(v2.x, v2.y, v2.z);
-        vertices[vertexIndex + 3] = new Vector3(v3.x, v3.y, v3.z);
+        Vector3Int vertex0 = corner;
+        Vector3Int vertex1 = corner + planeAxis1;
+        Vector3Int vertex2 = corner + planeAxis2;
+        Vector3Int vertex3 = corner + planeAxis1 + planeAxis2;
 
-        triangles[triangleIndex++] = vertexIndex;
-        triangles[triangleIndex++] = vertexIndex + 1;
-        triangles[triangleIndex++] = vertexIndex + 2;
+        _vertices[vertexIndex + 0] = new Vector3(vertex0.x, vertex0.y, vertex0.z);
+        _vertices[vertexIndex + 1] = new Vector3(vertex1.x, vertex1.y, vertex1.z);
+        _vertices[vertexIndex + 2] = new Vector3(vertex2.x, vertex2.y, vertex2.z);
+        _vertices[vertexIndex + 3] = new Vector3(vertex3.x, vertex3.y, vertex3.z);
 
-        triangles[triangleIndex++] = vertexIndex + 1;
-        triangles[triangleIndex++] = vertexIndex + 3;
-        triangles[triangleIndex++] = vertexIndex + 2;
+        _triangles[triangleIndex++] = vertexIndex;
+        _triangles[triangleIndex++] = vertexIndex + 1;
+        _triangles[triangleIndex++] = vertexIndex + 2;
+
+        _triangles[triangleIndex++] = vertexIndex + 1;
+        _triangles[triangleIndex++] = vertexIndex + 3;
+        _triangles[triangleIndex++] = vertexIndex + 2;
 
         if (rotateOrder)
         {
-            uv[vertexIndex + 0] = uvMap[0];
-            uv[vertexIndex + 1] = uvMap[2];
-            uv[vertexIndex + 2] = uvMap[1];
-            uv[vertexIndex + 3] = uvMap[3];
+            _uv[vertexIndex + 0] = uvMap[0];
+            _uv[vertexIndex + 1] = uvMap[2];
+            _uv[vertexIndex + 2] = uvMap[1];
+            _uv[vertexIndex + 3] = uvMap[3];
         }
         else
         {
-            uv[vertexIndex + 0] = uvMap[0];
-            uv[vertexIndex + 1] = uvMap[1];
-            uv[vertexIndex + 2] = uvMap[2];
-            uv[vertexIndex + 3] = uvMap[3];
+            _uv[vertexIndex + 0] = uvMap[0];
+            _uv[vertexIndex + 1] = uvMap[1];
+            _uv[vertexIndex + 2] = uvMap[2];
+            _uv[vertexIndex + 3] = uvMap[3];
         }
 
         vertexIndex += 4;
     }
 
-    NeighbourSolidStates GetNeighbourSolidStates(int x, int y, int z)
+    NeighbourStates GetNeighbourSolidStates(int x, int y, int z)
     {
-        return new NeighbourSolidStates
-        { solidAbove = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y + 1, z)))
-        , solidBelow = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y - 1, z)))
-        , solidLeft = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x - 1, y, z)))
-        , solidRight = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x + 1, y, z)))
-        , solidForward = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z + 1)))
-        , solidBackward = Block.IsBlockSolid(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z - 1)))
+        return new NeighbourStates
+        { Above = Block.IsBlockSolid(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y + 1, z)))
+        , Below = Block.IsBlockSolid(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y - 1, z)))
+        , Left = Block.IsBlockSolid(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x - 1, y, z)))
+        , Right = Block.IsBlockSolid(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x + 1, y, z)))
+        , Forward = Block.IsBlockSolid(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y, z + 1)))
+        , Backward = Block.IsBlockSolid(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y, z - 1)))
         };
     }
 
-    NeighbourVisibleStates GetNeighbourVisibleStates(int x, int y, int z)
+    NeighbourStates GetNeighbourStates(int x, int y, int z)
     {
-        return new NeighbourVisibleStates
-        { visibleAbove = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y + 1, z)))
-        , visibleBelow = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y - 1, z)))
-        , visibleLeft = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x - 1, y, z)))
-        , visibleRight = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x + 1, y, z)))
-        , visibleForward = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z + 1)))
-        , visibleBackward = Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z - 1)))
+        return new NeighbourStates
+        { Above = Block.IsBlockVisible(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y + 1, z)))
+        , Below = Block.IsBlockVisible(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y - 1, z)))
+        , Left = Block.IsBlockVisible(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x - 1, y, z)))
+        , Right = Block.IsBlockVisible(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x + 1, y, z)))
+        , Forward = Block.IsBlockVisible(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y, z + 1)))
+        , Backward = Block.IsBlockVisible(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y, z - 1)))
         };
     }
 
@@ -183,17 +226,17 @@ public class Chunk : MonoBehaviour
             {
                 for (int z = 0; z < Config.Instance.ChunkDepth; z++)
                 {
-                    if (Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z))))
+                    if (Block.IsBlockVisible(_world.Blocks, TranslateLocalToGlobalBlockPosition(new Vector3Int(x, y, z))))
                     {
-                        NeighbourSolidStates solidStates = GetNeighbourSolidStates(x, y, z);
-                        NeighbourVisibleStates visibleStates = GetNeighbourVisibleStates(x, y, z);
+                        NeighbourStates solidStates = GetNeighbourSolidStates(x, y, z);
+                        NeighbourStates visibleStates = GetNeighbourStates(x, y, z);
 
-                        visibleFaces += solidStates.solidAbove && visibleStates.visibleAbove ? 0 : 1;
-                        visibleFaces += solidStates.solidBelow && visibleStates.visibleBelow ? 0 : 1;
-                        visibleFaces += solidStates.solidLeft && visibleStates.visibleLeft ? 0 : 1;
-                        visibleFaces += solidStates.solidRight && visibleStates.visibleRight ? 0 : 1;
-                        visibleFaces += solidStates.solidForward && visibleStates.visibleForward ? 0 : 1;
-                        visibleFaces += solidStates.solidBackward && visibleStates.visibleBackward ? 0 : 1;
+                        visibleFaces += solidStates.Above && visibleStates.Above ? 0 : 1;
+                        visibleFaces += solidStates.Below && visibleStates.Below ? 0 : 1;
+                        visibleFaces += solidStates.Left && visibleStates.Left ? 0 : 1;
+                        visibleFaces += solidStates.Right && visibleStates.Right ? 0 : 1;
+                        visibleFaces += solidStates.Forward && visibleStates.Forward ? 0 : 1;
+                        visibleFaces += solidStates.Backward && visibleStates.Backward ? 0 : 1;
                     }
                 }
             }
@@ -202,13 +245,8 @@ public class Chunk : MonoBehaviour
         return visibleFaces;
     }
 
-    Vector3Int LocalPosToBlockPos(Vector3Int pos)
+    Vector3Int TranslateLocalToGlobalBlockPosition(Vector3Int localPosition)
     {
-        return position + pos;
-    }
-
-    Vector3Int BlockPosToLocalPos(Vector3Int pos)
-    {
-        return pos - position;
+        return _position + localPosition;
     }
 }

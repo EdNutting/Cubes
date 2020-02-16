@@ -41,7 +41,6 @@ public class World : MonoBehaviour
                     float z_norm = (float)z / GlobalChunkDepth;
                     bool isLand = y_norm < GetHeight(x_norm, z_norm);
                     Blocks[x, y, z] = new Block() { isSolid = true, isVisible = isLand, blockType = bT };
-
                 }
             }
         }
@@ -69,10 +68,7 @@ public class World : MonoBehaviour
                     Chunks[cX, cY, cZ] = chunk;
 
                     Chunk chunkComp = chunk.GetComponent<Chunk>();
-                    chunkComp.world = this;
-                    chunkComp.position = new Vector3Int(x, y, z);
-
-                    chunk.gameObject.name = string.Format("Chunk {0}, {1}, {2}", cX, cY, cZ);
+                    chunkComp.Init(this, new Vector3Int(x, y, z));
                 }
             }
         }
