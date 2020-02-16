@@ -136,14 +136,7 @@ public class Config : Singleton<Config>
 
         BlockUVMaps = new BlockUVMap[BlockTypeCount];
 
-        // 1 -- 3
-        // |    |
-        // 0 -- 2
-
-        // Stone
         BlockUVMaps[(int)BlockTypeIDs.Stone] = GenerateBlockUVMap(0, 1);
-
-        // Grass
         BlockUVMaps[(int)BlockTypeIDs.Grass] = GenerateBlockUVMap(new Vector2Int[] {
             new Vector2Int(0, 0),
             new Vector2Int(1, 0),
@@ -152,8 +145,6 @@ public class Config : Singleton<Config>
             new Vector2Int(1, 1),
             new Vector2Int(1, 1)
         });
-
-        // Dirt
         BlockUVMaps[(int)BlockTypeIDs.Dirt] = GenerateBlockUVMap(1, 0);
     }
 }
