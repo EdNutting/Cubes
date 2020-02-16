@@ -39,7 +39,7 @@ public class World : MonoBehaviour
             {
                 for (int z = 0; z < GlobalChunkDepth; z++)
                 {
-                    bT = (bT + 1) % 4;
+                    bT = (bT + 1) % Config.BlockTypeCount;
                     float y_norm = (float)y / GlobalChunkHeight;
                     float x_norm = (float)x / GlobalChunkWidth;
                     float z_norm = (float)z / GlobalChunkDepth;
