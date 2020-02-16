@@ -29,6 +29,7 @@ public class Chunk : MonoBehaviour
 
     Vector3[] vertices;
     int[] triangles;
+    Vector2[] uv;
 
     Mesh mesh;
     public MeshFilter meshFilter;
@@ -44,7 +45,8 @@ public class Chunk : MonoBehaviour
         mesh = new Mesh
         {
             vertices = vertices,
-            triangles = triangles
+            triangles = triangles,
+            uv = uv
         };
         meshFilter.mesh = mesh;
     }
@@ -53,12 +55,12 @@ public class Chunk : MonoBehaviour
     {
         int visibleFaceCount = CountVisibleFaces();
 
-        vertices = new Vector3[(1 + Config.ChunkWidth) * (1 + Config.ChunkHeight) * (1 + Config.ChunkDepth)];
+        vertices = new Vector3[visibleFaceCount * 4];
         triangles = new int[visibleFaceCount * 2 * 3]; // faces * triangles per face * vertices per triangle
-
-        GenerateVertices();
+        uv = new Vector2[vertices.Length];
 
         int triangleIndex = 0;
+        int vertexIndex = 0;
 
         for (int x = 0; x < Config.ChunkWidth; x++)
         {
@@ -68,87 +70,71 @@ public class Chunk : MonoBehaviour
                 {
                     if (Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z))))
                     {
-                        triangleIndex += GenerateBlockMesh(x, y, z, triangleIndex);
+                        GenerateBlockMesh(x, y, z, ref triangleIndex, ref vertexIndex);
                     }
                 }
             }
         }
     }
 
-    int GenerateBlockMesh(int x, int y, int z, int triangleIndex)
+    void GenerateBlockMesh(int x, int y, int z, ref int triangleIndex, ref int vertexIndex)
     {
-        int startTriangleIndex = triangleIndex;
-
         NeighbourSolidStates solidStates = GetNeighbourSolidStates(x, y, z);
         NeighbourVisibleStates visibleStates = GetNeighbourVisibleStates(x, y, z);
 
-        triangleIndex += solidStates.solidBelow && visibleStates.visibleBelow ? 0 
-            : GenerateFaceMesh(x, y, z, new Vector3Int(1, 0, 0), new Vector3Int(0, 0, 1), 3 * triangleIndex);
-        triangleIndex += solidStates.solidAbove && visibleStates.visibleAbove ? 0 
-            : GenerateFaceMesh(x, y + 1, z, new Vector3Int(0, 0, 1), new Vector3Int(1, 0, 0), 3 * triangleIndex);
+        BlockUVMap uvMap = Block.GetBlockUVMap(Block.GetBlockType(world.Blocks, new Vector3Int(x, y, z)));
 
-        triangleIndex += solidStates.solidBackward && visibleStates.visibleBackward ? 0 
-            : GenerateFaceMesh(x, y, z, new Vector3Int(0, 1, 0), new Vector3Int(1, 0, 0), 3 * triangleIndex);
-        triangleIndex += solidStates.solidForward && visibleStates.visibleForward ? 0 
-            : GenerateFaceMesh(x, y, z + 1, new Vector3Int(1, 0, 0), new Vector3Int(0, 1, 0), 3 * triangleIndex);
+        if (!solidStates.solidBelow || !visibleStates.visibleBelow)
+            GenerateFaceMesh(x, y, z, new Vector3Int(1, 0, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.bottom);
 
-        triangleIndex += solidStates.solidLeft && visibleStates.visibleLeft ? 0 
-            : GenerateFaceMesh(x, y, z, new Vector3Int(0, 0, 1), new Vector3Int(0, 1, 0), 3 * triangleIndex);
-        triangleIndex += solidStates.solidRight && visibleStates.visibleRight ? 0 
-            : GenerateFaceMesh(x + 1, y, z, new Vector3Int(0, 1, 0), new Vector3Int(0, 0, 1), 3 * triangleIndex);
+        if (!solidStates.solidAbove || !visibleStates.visibleAbove)
+            GenerateFaceMesh(x, y + 1, z, new Vector3Int(0, 0, 1), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.top);
 
-        return triangleIndex - startTriangleIndex;
+        if (!solidStates.solidBackward || !visibleStates.visibleBackward)
+            GenerateFaceMesh(x, y, z, new Vector3Int(0, 1, 0), new Vector3Int(1, 0, 0), ref triangleIndex, ref vertexIndex, uvMap.back);
+
+        if (!solidStates.solidForward || !visibleStates.visibleForward)
+            GenerateFaceMesh(x, y, z + 1, new Vector3Int(1, 0, 0), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.front);
+
+        if (!solidStates.solidLeft || !visibleStates.visibleLeft)
+            GenerateFaceMesh(x, y, z, new Vector3Int(0, 0, 1), new Vector3Int(0, 1, 0), ref triangleIndex, ref vertexIndex, uvMap.left);
+
+        if (!solidStates.solidRight || !visibleStates.visibleRight)
+            GenerateFaceMesh(x + 1, y, z, new Vector3Int(0, 1, 0), new Vector3Int(0, 0, 1), ref triangleIndex, ref vertexIndex, uvMap.right);
     }
 
-    int GenerateFaceMesh(int x, int y, int z, Vector3Int planeAxis1, Vector3Int planeAxis2, int triangleStartIndex)
+    void GenerateFaceMesh(int x, int y, int z, Vector3Int planeAxis1, Vector3Int planeAxis2, ref int triangleIndex, ref int vertexIndex, Vector2[] uvMap)
     {
         Vector3Int corner = new Vector3Int(x, y, z);
 
-        Vector3Int v1 = corner;
-        Vector3Int v2 = corner + planeAxis1;
-        Vector3Int v3 = corner + planeAxis2;
+        Vector3Int v0 = corner;
+        Vector3Int v1 = corner + planeAxis1;
+        Vector3Int v2 = corner + planeAxis2;
+        Vector3Int v3 = corner + planeAxis1 + planeAxis2;
 
-        Vector3Int v4 = corner + planeAxis1;
-        Vector3Int v5 = corner + planeAxis1 + planeAxis2;
-        Vector3Int v6 = corner + planeAxis2;
+        // 1 -- 3
+        // |    |
+        // 0 -- 2
 
-        triangles[0 + triangleStartIndex] = CalculateVertexIndex(v1);
-        triangles[1 + triangleStartIndex] = CalculateVertexIndex(v2);
-        triangles[2 + triangleStartIndex] = CalculateVertexIndex(v3);
+        vertices[vertexIndex + 0] = new Vector3(v0.x, v0.y, v0.z);
+        vertices[vertexIndex + 1] = new Vector3(v1.x, v1.y, v1.z);
+        vertices[vertexIndex + 2] = new Vector3(v2.x, v2.y, v2.z);
+        vertices[vertexIndex + 3] = new Vector3(v3.x, v3.y, v3.z);
 
-        triangles[3 + triangleStartIndex] = CalculateVertexIndex(v4);
-        triangles[4 + triangleStartIndex] = CalculateVertexIndex(v5);
-        triangles[5 + triangleStartIndex] = CalculateVertexIndex(v6);
+        triangles[triangleIndex++] = vertexIndex;
+        triangles[triangleIndex++] = vertexIndex + 1;
+        triangles[triangleIndex++] = vertexIndex + 2;
 
-        return 2;
-    }
+        triangles[triangleIndex++] = vertexIndex + 1;
+        triangles[triangleIndex++] = vertexIndex + 3;
+        triangles[triangleIndex++] = vertexIndex + 2;
 
-    int CalculateVertexIndex(Vector3Int v)
-    {
-        return CalculateVertexIndex(v.x, v.y, v.z);
-    }
+        uv[vertexIndex + 0] = uvMap[0];
+        uv[vertexIndex + 1] = uvMap[1];
+        uv[vertexIndex + 2] = uvMap[2];
+        uv[vertexIndex + 3] = uvMap[3];
 
-    int CalculateVertexIndex(int x, int y, int z)
-    {
-        int index = y * (1 + Config.ChunkWidth) * (1 + Config.ChunkDepth);
-        index += z * (1 + Config.ChunkWidth);
-        index += x;
-        return index;
-    }
-
-    void GenerateVertices()
-    {
-        for (int x = 0; x <= Config.ChunkWidth; x++)
-        {
-            for (int y = 0; y <= Config.ChunkHeight; y++)
-            {
-                for (int z = 0; z <= Config.ChunkDepth; z++)
-                {
-                    int index = CalculateVertexIndex(x, y, z);
-                    vertices[index] = new Vector3(x, y, z);
-                }
-            }
-        }
+        vertexIndex += 4;
     }
 
     NeighbourSolidStates GetNeighbourSolidStates(int x, int y, int z)
