@@ -62,11 +62,11 @@ public class Chunk : MonoBehaviour
         int triangleIndex = 0;
         int vertexIndex = 0;
 
-        for (int x = 0; x < Config.ChunkWidth; x++)
+        for (int x = 0; x < Config.Instance.ChunkWidth; x++)
         {
-            for (int y = 0; y < Config.ChunkHeight; y++)
+            for (int y = 0; y < Config.Instance.ChunkHeight; y++)
             {
-                for (int z = 0; z < Config.ChunkDepth; z++)
+                for (int z = 0; z < Config.Instance.ChunkDepth; z++)
                 {
                     if (Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z))))
                     {
@@ -177,11 +177,11 @@ public class Chunk : MonoBehaviour
     {
         int visibleFaces = 0;
 
-        for (int x = 0; x < Config.ChunkWidth; x++)
+        for (int x = 0; x < Config.Instance.ChunkWidth; x++)
         {
-            for (int y = 0; y < Config.ChunkHeight; y++)
+            for (int y = 0; y < Config.Instance.ChunkHeight; y++)
             {
-                for (int z = 0; z < Config.ChunkDepth; z++)
+                for (int z = 0; z < Config.Instance.ChunkDepth; z++)
                 {
                     if (Block.IsBlockVisible(world.Blocks, LocalPosToBlockPos(new Vector3Int(x, y, z))))
                     {

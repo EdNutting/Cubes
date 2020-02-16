@@ -44,6 +44,6 @@ public class Block : IBlock
 
     public static BlockUVMap GetBlockUVMap(int blockType)
     {
-        return Config.BlockUVMaps[blockType];
+        return Config.Instance.BlockUVMaps[blockType];
     }
 }

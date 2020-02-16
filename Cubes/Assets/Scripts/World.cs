@@ -22,14 +22,11 @@ public class World : MonoBehaviour
 
     void GenerateBlockData()
     {
-        int GlobalChunkWidth = Config.ChunkCount * Config.ChunkWidth;
-        int GlobalChunkHeight = Config.ChunkCount * Config.ChunkHeight;
-        int GlobalChunkDepth = Config.ChunkCount * Config.ChunkDepth;
+        int GlobalChunkWidth = Config.Instance.ChunkCount * Config.Instance.ChunkWidth;
+        int GlobalChunkHeight = Config.Instance.ChunkCount * Config.Instance.ChunkHeight;
+        int GlobalChunkDepth = Config.Instance.ChunkCount * Config.Instance.ChunkDepth;
 
-        Blocks = new IBlock[GlobalChunkWidth
-                           , GlobalChunkHeight
-                           , GlobalChunkDepth
-                           ];
+        Blocks = new IBlock[GlobalChunkWidth, GlobalChunkHeight, GlobalChunkDepth];
 
         int bT = 0;
 
@@ -39,7 +36,6 @@ public class World : MonoBehaviour
             {
                 for (int z = 0; z < GlobalChunkDepth; z++)
                 {
-                    bT = (bT + 1) % 4;
                     float y_norm = (float)y / GlobalChunkHeight;
                     float x_norm = (float)x / GlobalChunkWidth;
                     float z_norm = (float)z / GlobalChunkDepth;
@@ -58,16 +54,16 @@ public class World : MonoBehaviour
 
     void GenerateChunks()
     {
-        Chunks = new GameObject[Config.ChunkCount, Config.ChunkCount, Config.ChunkCount];
-        for (int cX = 0; cX < Config.ChunkCount; cX++)
+        Chunks = new GameObject[Config.Instance.ChunkCount, Config.Instance.ChunkCount, Config.Instance.ChunkCount];
+        for (int cX = 0; cX < Config.Instance.ChunkCount; cX++)
         {
-            for (int cY = 0; cY < Config.ChunkCount; cY++)
+            for (int cY = 0; cY < Config.Instance.ChunkCount; cY++)
             {
-                for (int cZ = 0; cZ < Config.ChunkCount; cZ++)
+                for (int cZ = 0; cZ < Config.Instance.ChunkCount; cZ++)
                 {
-                    int x = cX * Config.ChunkWidth;
-                    int y = cY * Config.ChunkHeight;
-                    int z = cZ * Config.ChunkDepth;
+                    int x = cX * Config.Instance.ChunkWidth;
+                    int y = cY * Config.Instance.ChunkHeight;
+                    int z = cZ * Config.Instance.ChunkDepth;
 
                     var chunk = GameObject.Instantiate(BaseChunk, new Vector3(x, y, z), Quaternion.identity);
                     Chunks[cX, cY, cZ] = chunk;

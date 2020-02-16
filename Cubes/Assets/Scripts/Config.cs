@@ -2,32 +2,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class Config
+[System.Serializable]
+public class Config : Singleton<Config>
 {
-    public static int ChunkWidth = 16;
-    public static int ChunkHeight = 16;
-    public static int ChunkDepth = 16;
+    public int ChunkWidth = 16;
+    public int ChunkHeight = 16;
+    public int ChunkDepth = 16;
 
-    public static int ChunkCount = 10;
+    public int ChunkCount = 10;
 
-    public static int TextureCols = 2;
-    public static int TextureRows = 2;
+    public int TextureCols = 2;
+    public int TextureRows = 2;
 
-    public static float TextureXShift = 1.0f / TextureCols;
-    public static float TextureYShift = 1.0f / TextureRows;
+    public readonly float TextureXShift;
+    public readonly float TextureYShift;
 
-    public static int BlockTypeCount = 3;
+    public readonly int BlockTypeCount = 3;
 
-    public static BlockUVMap[] BlockUVMaps;
+    public readonly BlockUVMap[] BlockUVMaps;
 
-    public enum BlockTypeIDs : int
-    {
-        Stone = 0,
-        Grass = 1,
-        Dirt = 2
-    }
-
-    static BlockUVMap GenerateBlockUVMap(Vector2Int[] positions)
+    BlockUVMap GenerateBlockUVMap(Vector2Int[] positions)
     {
         return new BlockUVMap
         {
@@ -81,7 +75,7 @@ public static class Config
         };
     }
 
-    static BlockUVMap GenerateBlockUVMap(int c, int r)
+    BlockUVMap GenerateBlockUVMap(int c, int r)
     {
         return new BlockUVMap
         {
@@ -135,8 +129,11 @@ public static class Config
         };
     }
 
-    static Config()
+    public Config()
     {
+        TextureXShift = 1.0f / TextureCols;
+        TextureYShift = 1.0f / TextureRows;
+
         BlockUVMaps = new BlockUVMap[BlockTypeCount];
 
         // 1 -- 3
