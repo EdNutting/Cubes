@@ -22,23 +22,38 @@ public class World : MonoBehaviour
 
     void GenerateBlockData()
     {
-        Blocks = new IBlock[ Config.ChunkCount * Config.ChunkWidth
-                           , Config.ChunkCount * Config.ChunkHeight
-                           , Config.ChunkCount * Config.ChunkDepth
+        int GlobalChunkWidth = Config.ChunkCount * Config.ChunkWidth;
+        int GlobalChunkHeight = Config.ChunkCount * Config.ChunkHeight;
+        int GlobalChunkDepth = Config.ChunkCount * Config.ChunkDepth;
+
+        Blocks = new IBlock[GlobalChunkWidth
+                           , GlobalChunkHeight
+                           , GlobalChunkDepth
                            ];
 
         int bT = 0;
-        for (int x = 0; x < Config.ChunkCount * Config.ChunkWidth; x++)
+
+        for (int x = 0; x < GlobalChunkWidth; x++)
         {
-            for (int y = 0; y < Config.ChunkCount * Config.ChunkHeight; y++)
+            for (int y = 0; y < GlobalChunkHeight; y++)
             {
-                for (int z = 0; z < Config.ChunkCount * Config.ChunkDepth; z++)
+                for (int z = 0; z < GlobalChunkDepth; z++)
                 {
-                    Blocks[x, y, z] = new Block() { isSolid = true, isVisible = x % 3 == 0, blockType = bT };
                     bT = (bT + 1) % 4;
+                    float y_norm = (float)y / GlobalChunkHeight;
+                    float x_norm = (float)x / GlobalChunkWidth;
+                    float z_norm = (float)z / GlobalChunkDepth;
+                    bool isLand = y_norm < GetHeight(x_norm, z_norm);
+                    Blocks[x, y, z] = new Block() { isSolid = true, isVisible = isLand, blockType = bT };
+
                 }
             }
         }
+    }
+
+    public static float GetHeight(float x, float z)
+    {
+        return Mathf.PerlinNoise(x, z);
     }
 
     void GenerateChunks()
