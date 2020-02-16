@@ -28,7 +28,7 @@ public class World : MonoBehaviour
 
         Blocks = new IBlock[GlobalChunkWidth, GlobalChunkHeight, GlobalChunkDepth];
 
-        int bT = 0;
+        int bT = (int)BlockTypeIDs.Grass;
 
         for (int x = 0; x < GlobalChunkWidth; x++)
         {
