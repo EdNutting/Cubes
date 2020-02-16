@@ -44,65 +44,6 @@ public class Block : IBlock
 
     public static BlockUVMap GetBlockUVMap(int blockType)
     {
-        // 1 -- 3
-        // |    |
-        // 0 -- 2
-
-        int textureCols = 2;
-        int textureRows = 2;
-
-        float xShift = 1.0f / textureCols;
-        float yShift = 1.0f / textureRows;
-
-        return new BlockUVMap
-        {
-            top = new Vector2[]
-            {
-                new Vector2(0, 0),
-                new Vector2(0, yShift),
-                new Vector2(xShift, 0),
-                new Vector2(xShift, yShift)
-            },
-
-            bottom = new Vector2[]
-            {
-                new Vector2(0, 0),
-                new Vector2(0, yShift),
-                new Vector2(xShift, 0),
-                new Vector2(xShift, yShift)
-            },
-
-            left = new Vector2[]
-            {
-                new Vector2(0, 0),
-                new Vector2(0, yShift),
-                new Vector2(xShift, 0),
-                new Vector2(xShift, yShift)
-            },
-
-            right = new Vector2[]
-            {
-                new Vector2(0, 0),
-                new Vector2(0, yShift),
-                new Vector2(xShift, 0),
-                new Vector2(xShift, yShift)
-            },
-
-            front = new Vector2[]
-            {
-                new Vector2(0, 0),
-                new Vector2(0, yShift),
-                new Vector2(xShift, 0),
-                new Vector2(xShift, yShift)
-            },
-
-            back = new Vector2[]
-            {
-                new Vector2(0, 0),
-                new Vector2(0, yShift),
-                new Vector2(xShift, 0),
-                new Vector2(xShift, yShift)
-            }
-        };
+        return Config.BlockUVMaps[blockType];
     }
 }

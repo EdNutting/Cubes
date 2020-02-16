@@ -27,13 +27,15 @@ public class World : MonoBehaviour
                            , Config.ChunkCount * Config.ChunkDepth
                            ];
 
+        int bT = 0;
         for (int x = 0; x < Config.ChunkCount * Config.ChunkWidth; x++)
         {
             for (int y = 0; y < Config.ChunkCount * Config.ChunkHeight; y++)
             {
                 for (int z = 0; z < Config.ChunkCount * Config.ChunkDepth; z++)
                 {
-                    Blocks[x, y, z] = new Block() { isSolid = true, isVisible = x % 2 == 0 };
+                    Blocks[x, y, z] = new Block() { isSolid = true, isVisible = x % 3 == 0, blockType = bT };
+                    bT = (bT + 1) % 4;
                 }
             }
         }
