@@ -9,7 +9,7 @@ public class Config : Singleton<Config>
     public int ChunkHeight = 16;
     public int ChunkDepth = 16;
 
-    public int ChunkCount = 10;
+    public int ChunksToGeneratePerAxis = 10;
 
     public int TextureCols = 2;
     public int TextureRows = 2;

@@ -22,9 +22,9 @@ public class World : MonoBehaviour
 
     void GenerateBlockData()
     {
-        int GlobalChunkWidth = Config.Instance.ChunkCount * Config.Instance.ChunkWidth;
-        int GlobalChunkHeight = Config.Instance.ChunkCount * Config.Instance.ChunkHeight;
-        int GlobalChunkDepth = Config.Instance.ChunkCount * Config.Instance.ChunkDepth;
+        int GlobalChunkWidth = Config.Instance.ChunksToGeneratePerAxis * Config.Instance.ChunkWidth;
+        int GlobalChunkHeight = Config.Instance.ChunksToGeneratePerAxis * Config.Instance.ChunkHeight;
+        int GlobalChunkDepth = Config.Instance.ChunksToGeneratePerAxis * Config.Instance.ChunkDepth;
 
         Blocks = new IBlock[GlobalChunkWidth, GlobalChunkHeight, GlobalChunkDepth];
 

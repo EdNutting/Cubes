@@ -295,7 +295,7 @@ MonoBehaviour:
   ChunkWidth: 4
   ChunkHeight: 4
   ChunkDepth: 4
-  ChunkCount: 10
+  ChunksToGeneratePerAxis: 16
   TextureCols: 2
   TextureRows: 2
 --- !u!4 &1133111225
