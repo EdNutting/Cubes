@@ -46,6 +46,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   meshFilter: {fileID: 1289242112139373808}
+  world: {fileID: 0}
+  position: {x: 0, y: 0, z: 0}
 --- !u!33 &1289242112139373808
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -71,7 +73,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 487a6b1c454c59d459d7d256fe5fa1ed, type: 2}
+  - {fileID: 2100000, guid: 569e9388574bf0f43b4afa43d66b4f93, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
