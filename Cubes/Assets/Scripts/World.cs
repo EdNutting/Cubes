@@ -40,7 +40,12 @@ public class World : MonoBehaviour
                     float x_norm = (float)x / GlobalChunkWidth;
                     float z_norm = (float)z / GlobalChunkDepth;
                     bool isLand = y_norm < GetHeight(x_norm, z_norm);
-                    Blocks[x, y, z] = new Block() { IsSolid = true, IsVisible = isLand, BlockType = bT };
+                    Blocks[x, y, z] = new Block() { 
+                        Position = new Vector3Int(x, y, z), 
+                        IsSolid = true, 
+                        IsVisible = isLand, 
+                        BlockType = bT 
+                    };
                 }
             }
         }
@@ -51,14 +56,69 @@ public class World : MonoBehaviour
         return Mathf.PerlinNoise(x, z);
     }
 
+    (Vector3Int, Vector3Int) FindCoordinateLimits()
+    {
+        Vector3Int min = new Vector3Int();
+        Vector3Int max = new Vector3Int();
+
+        for (int x = 0; x < Blocks.GetLength(0); x++)
+        {
+            for (int y = 0; y < Blocks.GetLength(1); y++)
+            {
+                for (int z = 0; z < Blocks.GetLength(0); z++)
+                {
+                    Vector3Int position = Blocks[x, y, z].Position;
+                    if (position.x < min.x)
+                    {
+                        min.x = position.x;
+                    }
+                    if (position.y < min.y)
+                    {
+                        min.y = position.y;
+                    }
+                    if (position.z < min.z)
+                    {
+                        min.z = position.z;
+                    }
+
+                    if (position.x > max.x)
+                    {
+                        max.x = position.x;
+                    }
+                    if (position.y > max.y)
+                    {
+                        max.y = position.y;
+                    }
+                    if (position.z > max.z)
+                    {
+                        max.z = position.z;
+                    }
+                }
+            }
+        }
+
+        return (min, max);
+    }
+
     void GenerateChunks()
     {
-        Chunks = new GameObject[Config.Instance.ChunkCount, Config.Instance.ChunkCount, Config.Instance.ChunkCount];
-        for (int cX = 0; cX < Config.Instance.ChunkCount; cX++)
+        Vector3Int minCoords, maxCoords;
+        (minCoords, maxCoords) = FindCoordinateLimits();
+
+        int WidthInBlocks = 1 + maxCoords.x - minCoords.x;
+        int HeightInBlocks = 1 + maxCoords.y - minCoords.y;
+        int DepthInBlocks = 1 + maxCoords.z - minCoords.z;
+
+        int WidthInChunks = Mathf.CeilToInt(WidthInBlocks / Config.Instance.ChunkWidth);
+        int HeightInChunks = Mathf.CeilToInt(HeightInBlocks / Config.Instance.ChunkHeight);
+        int DepthInChunks = Mathf.CeilToInt(DepthInBlocks / Config.Instance.ChunkDepth);
+
+        Chunks = new GameObject[WidthInChunks, HeightInChunks, DepthInChunks];
+        for (int cX = 0; cX < WidthInChunks; cX++)
         {
-            for (int cY = 0; cY < Config.Instance.ChunkCount; cY++)
+            for (int cY = 0; cY < HeightInChunks; cY++)
             {
-                for (int cZ = 0; cZ < Config.Instance.ChunkCount; cZ++)
+                for (int cZ = 0; cZ < DepthInChunks; cZ++)
                 {
                     int x = cX * Config.Instance.ChunkWidth;
                     int y = cY * Config.Instance.ChunkHeight;
