@@ -4,42 +4,42 @@ using UnityEngine;
 
 public interface IBlock
 {
-    Vector3Int pos { get; }
-    bool isSolid { get;  }
-    bool isVisible { get; }
-    int blockType { get; }
+    Vector3Int Position { get; }
+    bool IsSolid { get;  }
+    bool IsVisible { get; }
+    int BlockType { get; }
 }
 
 public class Block : IBlock
 { 
-    public Vector3Int pos { get; set; }
-    public bool isSolid { get; set; }
-    public bool isVisible { get; set; }
-    public int blockType { get; set; }
+    public Vector3Int Position { get; set; }
+    public bool IsSolid { get; set; }
+    public bool IsVisible { get; set; }
+    public int BlockType { get; set; }
 
 
-    public static bool BlockExists(IBlock[,,] blocks, Vector3Int pos)
+    public static bool BlockExists(IBlock[,,] blocks, Vector3Int position)
     {
-        return pos.x >= 0 && pos.x < blocks.GetLength(0)
-            && pos.y >= 0 && pos.y < blocks.GetLength(1)
-            && pos.z >= 0 && pos.z < blocks.GetLength(2);
+        return position.x >= 0 && position.x < blocks.GetLength(0)
+            && position.y >= 0 && position.y < blocks.GetLength(1)
+            && position.z >= 0 && position.z < blocks.GetLength(2);
     }
 
-    public static bool IsBlockSolid(IBlock[,,] blocks, Vector3Int pos)
+    public static bool IsBlockSolid(IBlock[,,] blocks, Vector3Int position)
     {
-        return BlockExists(blocks, pos) 
-            && blocks[pos.x, pos.y, pos.z].isSolid;
+        return BlockExists(blocks, position) 
+            && blocks[position.x, position.y, position.z].IsSolid;
     }
 
-    public static bool IsBlockVisible(IBlock[,,] blocks, Vector3Int pos)
+    public static bool IsBlockVisible(IBlock[,,] blocks, Vector3Int position)
     {
-        return BlockExists(blocks, pos)
-            && blocks[pos.x, pos.y, pos.z].isVisible;
+        return BlockExists(blocks, position)
+            && blocks[position.x, position.y, position.z].IsVisible;
     }
 
-    public static int GetBlockType(IBlock[,,] blocks, Vector3Int pos)
+    public static int GetBlockType(IBlock[,,] blocks, Vector3Int position)
     {
-        return BlockExists(blocks, pos) ? blocks[pos.x, pos.y, pos.z].blockType : -1;
+        return BlockExists(blocks, position) ? blocks[position.x, position.y, position.z].BlockType : -1;
     }
 
     public static BlockUVMap GetBlockUVMap(int blockType)

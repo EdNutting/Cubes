@@ -40,7 +40,7 @@ public class World : MonoBehaviour
                     float x_norm = (float)x / GlobalChunkWidth;
                     float z_norm = (float)z / GlobalChunkDepth;
                     bool isLand = y_norm < GetHeight(x_norm, z_norm);
-                    Blocks[x, y, z] = new Block() { isSolid = true, isVisible = isLand, blockType = bT };
+                    Blocks[x, y, z] = new Block() { IsSolid = true, IsVisible = isLand, BlockType = bT };
                 }
             }
         }
