@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class World : MonoBehaviour
 {
-    GameObject[] Chunks;
+    GameObject[,,] Chunks;
     public GameObject BaseChunk;
 
     public IBlock[,,] Blocks;
@@ -33,7 +33,7 @@ public class World : MonoBehaviour
             {
                 for (int z = 0; z < Config.ChunkCount * Config.ChunkDepth; z++)
                 {
-                    Blocks[x, y, z] = new Block();
+                    Blocks[x, y, z] = new Block() { isSolid = true };
                 }
             }
         }
@@ -41,17 +41,27 @@ public class World : MonoBehaviour
 
     void GenerateChunks()
     {
-        Chunks = new GameObject[Config.ChunkCount];
-        for (int i = 0; i < Config.ChunkCount; i++)
+        Chunks = new GameObject[Config.ChunkCount, Config.ChunkCount, Config.ChunkCount];
+        for (int cX = 0; cX < Config.ChunkCount; cX++)
         {
-            int x = i;
-            int y = 0;
-            int z = 0;
+            for (int cY = 0; cY < Config.ChunkCount; cY++)
+            {
+                for (int cZ = 0; cZ < Config.ChunkCount; cZ++)
+                {
+                    int x = cX * Config.ChunkWidth;
+                    int y = cY * Config.ChunkHeight;
+                    int z = cZ * Config.ChunkDepth;
 
-            var chunk = GameObject.Instantiate(BaseChunk, new Vector3(x * Config.ChunkWidth, y * Config.ChunkHeight, z * Config.ChunkDepth), Quaternion.identity);
-            Chunks[i] = chunk;
+                    var chunk = GameObject.Instantiate(BaseChunk, new Vector3(x, y, z), Quaternion.identity);
+                    Chunks[cX, cY, cZ] = chunk;
 
-            chunk.gameObject.name = string.Format("Chunk {0}, {1}, {2}", x, y, z);
+                    Chunk chunkComp = chunk.GetComponent<Chunk>();
+                    chunkComp.world = this;
+                    chunkComp.position = new Vector3Int(x, y, z);
+
+                    chunk.gameObject.name = string.Format("Chunk {0}, {1}, {2}", cX, cY, cZ);
+                }
+            }
         }
     }
 }
